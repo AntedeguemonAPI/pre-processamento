@@ -2,7 +2,7 @@ import re
 import spacy
 
 # Carrega o modelo de português do SpaCy
-nlp = spacy.load("pt_core_news_sm")
+nlp = spacy.load("pt_core_news_md")
 
 def clean_text(text: str) -> str:
     """

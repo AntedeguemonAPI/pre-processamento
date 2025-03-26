@@ -1,15 +1,27 @@
 import spacy
+from collections import Counter
 
-# Carrega o modelo de português
-nlp = spacy.load("pt_core_news_sm")
+# Carrega o modelo SpaCy
+nlp = spacy.load("pt_core_news_md")
 
-def pos_tagging(text: str) -> list:
+def pos_tagging(tokens):
     """
-    Realiza a rotulação gramatical (POS Tagging) utilizando o SpaCy.
-    Retorna uma lista de tuplas (token, tag).
+    Aplica POS tagging nos tokens e conta a quantidade de vezes que cada tag aparece.
     """
-    if not isinstance(text, str):
-        return []
+    # Inicializa o contador para as tags
+    tag_counts = Counter()
+    
+    # Verifica se os tokens são válidos
+    if not tokens or not isinstance(tokens, list):
+        return {}, "Lista de tokens inválida ou vazia."
 
-    doc = nlp(text)
-    return [(token.text, token.pos_) for token in doc]  # (token, POS tag)
+    # Processa cada token com SpaCy para obter a tag de POS
+    for token in tokens:
+        # Aplica o processamento no token
+        doc = nlp(token)
+        for word in doc:
+            if word.pos_ != "PUNCT" and word.text.strip():  # Ignora pontuação e tokens vazios
+                # Atualiza a contagem da tag POS
+                tag_counts.update([word.pos_])
+
+    return tag_counts, f"Tags encontradas: {tag_counts}"

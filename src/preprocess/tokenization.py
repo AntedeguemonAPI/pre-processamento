@@ -1,14 +1,17 @@
 import spacy
 
-# Carrega o modelo de português
-nlp = spacy.load("pt_core_news_sm")
+# Carrega o modelo SpaCy
+nlp = spacy.load("pt_core_news_md")
 
-def tokenize_text(text: str) -> list:
+def tokenize_text(text):
     """
-    Tokeniza o texto usando SpaCy.
+    Tokeniza uma string individual usando SpaCy.
     """
-    if not isinstance(text, str):
+    if not text or not isinstance(text, str):  # Verifica se o texto é válido
         return []
 
     doc = nlp(text)
-    return [token.text for token in doc if not token.is_punct]
+    tokens = [token.text for token in doc if not token.is_punct]
+
+
+    return tokens
