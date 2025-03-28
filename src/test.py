@@ -8,8 +8,3 @@ df = load_csv(file_path)
 
 # Pré-processamento dos textos da coluna 'Descrição'
 df = preprocess_text_column(df, 'Descrição')
-
-
-
-
-

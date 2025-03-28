@@ -1,7 +1,7 @@
 import spacy
 
 # Carrega o modelo de português
-nlp = spacy.load("pt_core_news_sm")
+nlp = spacy.load("pt_core_news_md")
 
 def lemmatize_tokens(tokens: list) -> list:
     """

@@ -2,7 +2,7 @@ import spacy
 import numpy as np
 
 
-nlp = spacy.load("pt_core_news_sm")
+nlp = spacy.load("pt_core_news_md")
 
 def vectorize_text(text: str) -> np.ndarray:
     """
