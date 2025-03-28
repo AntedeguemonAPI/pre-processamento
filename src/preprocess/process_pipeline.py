@@ -1,13 +1,6 @@
 import pandas as pd
 import json
-from preprocess.text_cleaning import clean_text
-from preprocess.tokenization import tokenize_text
-from preprocess.stopwords import remove_stopwords
-from preprocess.vectorization import vectorize_text
-from preprocess.lemmatization import lemmatize_tokens
-from preprocess.pos_tagging import pos_tagging  # Agora importando a função corrigida
-from preprocess.parsing import parse_text
-from preprocess.error_detection import count_spelling_errors
+from preprocess import clean_text, tokenize_text, remove_stopwords, vectorize_text, lemmatize_tokens, pos_tagging, parse_text, count_spelling_errors
 from collections import Counter
 
 def preprocess_text_column(df: pd.DataFrame, column: str):
