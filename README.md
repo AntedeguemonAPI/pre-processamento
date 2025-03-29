@@ -11,4 +11,4 @@
 5. python src/main.py
 
 
-ROTA PARA LEITURA DO ARQUIVO .CSV: http://localhost:8000/files/upload_csv/
+ROTA PARA LEITURA DO ARQUIVO .CSV: http://localhost:5001/files/upload_csv/
