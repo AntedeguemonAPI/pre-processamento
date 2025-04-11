@@ -47,23 +47,29 @@ def preprocess_text_column(df: pd.DataFrame, column: str):
     # Acumulando as palavras erradas
     all_spelling_errors = []
     total_errors = 0
+    total_percent = 0.0
 
     for text in df[column]:
-        errors, palavras_erradas = count_spelling_errors(text)
+        errors, palavras_erradas, percentual = count_spelling_errors(text)
         total_errors += errors
+        total_percent += percentual
         all_spelling_errors.extend(palavras_erradas)
 
     # Agora podemos contar as palavras mais comuns
     word_count = Counter(all_spelling_errors)
     most_common_errors = word_count.most_common(10)
 
+    media_erro_percentual = total_percent / len(df)
+
     resultado_json = {
         "total_tokens": total_tokens,
         "pos_tag_counts": dict(pos_tag_counts),
         "top_10_words": most_common_words,
         "top_10_spelling_errors": most_common_errors,
-        "total_spelling_errors": total_errors
-    }
+        "total_spelling_errors": total_errors,
+        "percentual_medio_erros": round(media_erro_percentual, 2)
+}
+
 
     with open("resultado_pipeline.json", "w", encoding="utf-8") as f:
         json.dump(resultado_json, f, ensure_ascii=False, indent=4)
