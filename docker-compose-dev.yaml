@@ -1,0 +1,27 @@
+version: '3.8'
+
+networks:
+  rede_microsservicos:
+    external: true
+
+services:
+  pre-processamento:
+    image: briscese/pre-processamento:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    networks:
+      rede_microsservicos:
+        ipv4_address: 172.18.0.10
+    depends_on:
+      - cadastro-autenticacao
+
+  cadastro-autenticacao:
+    image: briscese/nc-controller-cadastro-autenticacao:latest
+    ports:
+      - "3000:3000"
+    networks:
+      rede_microsservicos:
+        ipv4_address: 172.18.0.4
