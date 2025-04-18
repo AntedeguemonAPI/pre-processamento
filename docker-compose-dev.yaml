@@ -47,8 +47,8 @@ services:
         ipv4_address: 172.18.0.10
     depends_on:
       - controller-cadastro-autenticacao
-    volumes:
-      - ./src:/app/src
+    # volumes:
+    #  - ./src:/app/src
 
   controller-cadastro-autenticacao:
     image: briscese/nc-controller-cadastro-autenticacao:latest
