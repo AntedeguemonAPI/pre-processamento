@@ -38,7 +38,7 @@ services:
   pre-processamento:
     image: briscese/pre-processamento:latest
     build:
-      context: .
+      context: ../pre-processamento
       dockerfile: Dockerfile
     ports:
       - "5001:5001"
@@ -47,8 +47,22 @@ services:
         ipv4_address: 172.18.0.10
     depends_on:
       - controller-cadastro-autenticacao
-    # volumes:
-    #  - ./src:/app/src
+    volumes:
+      - ../pre-processamento/src:/app/src
+
+  banco-de-dados:
+    image: briscese/banco-de-dados:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5003:5003"
+    networks:
+      rede_microsservicos:
+        ipv4_address: 172.18.0.11
+    depends_on:
+      - controller-cadastro-autenticacao
+
 
   controller-cadastro-autenticacao:
     image: briscese/nc-controller-cadastro-autenticacao:latest
