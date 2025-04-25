@@ -25,10 +25,30 @@ async def process_pipeline(file_path: str, id_gerado: int):
 
         with open("resultado_pipeline.json", "r", encoding="utf-8") as json_file:
             resultado_json = json.load(json_file)
-
+        
         requests.put(f"{ID_SERVICE_URL}/preprocessamento/{id_gerado}", json=resultado_json)
     except Exception as e:
         print(f"Erro ao processar o arquivo: {str(e)}")
+
+async def send_tokenization_to_api(id_gerado, file_path):
+
+    df = load_csv(file_path)
+    for index, row in df.iterrows():
+        id_gerado = row['ID']
+        
+        resultado_json = {
+            "ID_geral": id_gerado,
+            "Descrição_tokens_filtered": row["Descrição_tokens_filtered"],
+            "Descrição_tokens": row["Descrição_tokens"],
+            "Solução - Solução": row["Solução - Solução"]
+        }
+
+        response = requests.post(
+            f"{ID_SERVICE_URL}/texto_limpo",
+            json=resultado_json
+        )
+
+        print(f"Enviado ID {id_gerado}: {response.status_code}")
 
 @router.post("/upload_csv/")
 async def upload_csv(file: UploadFile = File(...)):
@@ -53,6 +73,8 @@ async def upload_csv(file: UploadFile = File(...)):
         buffer.write(await file.read())
     
     asyncio.create_task(process_pipeline(file_path, id_gerado))
+
+    asyncio.create_task(send_tokenization_to_api(file_path="./data/processed/dataset_processado.csv" ,id_gerado=id_gerado))
     
     try:
         final_response = requests.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
