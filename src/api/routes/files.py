@@ -14,7 +14,7 @@ PROCESSED_DIR = "./data/processed/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
-ID_SERVICE_URL = "http://localhost:5003"
+ID_SERVICE_URL = "http://banco-de-dados:5003"
 
 async def process_pipeline(file_path: str, id_gerado: int):
     try:
