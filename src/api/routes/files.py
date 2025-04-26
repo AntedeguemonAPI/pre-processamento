@@ -14,7 +14,7 @@ PROCESSED_DIR = "./data/processed/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
-ID_SERVICE_URL = "http://banco-de-dados:5003"
+ID_SERVICE_URL = "http://localhost:5003"
 
 async def process_pipeline(file_path: str, id_gerado: int):
     try:
@@ -33,9 +33,11 @@ async def process_pipeline(file_path: str, id_gerado: int):
 async def send_tokenization_to_api(id_gerado, file_path):
 
     df = load_csv(file_path)
-    for index, row in df.iterrows():
-        id_gerado = row['ID']
-        
+    df = df.replace({pd.NA: None, pd.NaT: None, float('nan'): None, float('inf'): None, float('-inf'): None})
+
+    print(f"Carregando arquivo: {file_path}")
+    print(f"ID gerado: {id_gerado}")
+    for index, row in df.iterrows():        
         resultado_json = {
             "ID_geral": id_gerado,
             "Descrição_tokens_filtered": row["Descrição_tokens_filtered"],
@@ -73,7 +75,7 @@ async def upload_csv(file: UploadFile = File(...)):
         buffer.write(await file.read())
     
     asyncio.create_task(process_pipeline(file_path, id_gerado))
-
+    
     asyncio.create_task(send_tokenization_to_api(file_path="./data/processed/dataset_processado.csv" ,id_gerado=id_gerado))
     
     try:
