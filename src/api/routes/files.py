@@ -45,7 +45,7 @@ async def send_tokenization_to_api(id_gerado, file_path):
             "Solução - Solução": row["Solução - Solução"],
             "Descrição": row["Descrição"],
             "Data de abertura": row["Data de abertura"],
-            "Data de fechamento": row["Data de fechamento"],
+            "Data de fechamento": row["Data de fechamento"]
         }
 
         response = requests.post(
@@ -81,9 +81,12 @@ async def upload_csv(file: UploadFile = File(...)):
     
     asyncio.create_task(send_tokenization_to_api(file_path="./data/processed/dataset_processado.csv" ,id_gerado=id_gerado))
     
+    asyncio.create_task(requests.post(f"http://localhost:8000/indexar/{id_gerado}"))
+    
     try:
         final_response = requests.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
         final_response.raise_for_status()
+        
         return final_response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar dados do ID gerado: {str(e)}")
