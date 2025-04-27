@@ -43,7 +43,9 @@ async def send_tokenization_to_api(id_gerado, file_path):
             "Descrição_tokens_filtered": row["Descrição_tokens_filtered"],
             "Descrição_tokens": row["Descrição_tokens"],
             "Solução - Solução": row["Solução - Solução"],
-            "Descrição": row["Descrição"]
+            "Descrição": row["Descrição"],
+            "Data de abertura": row["Data de abertura"],
+            "Data de fechamento": row["Data de fechamento"],
         }
 
         response = requests.post(
