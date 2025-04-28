@@ -2,24 +2,45 @@ import spacy
 
 nlp = spacy.load("pt_core_news_md")
 
-# Lista de palavras comuns que não devem ser consideradas erros
 stop_words = {"de", "o", "a", "que", "para", "do", "da", "no", "na", "em", "e", "os", "as", "como", "com", "sem"}
 
+palavras_validas_customizadas = {
+    "thaylla", "layla", "ingridy", "gilmaria", "araguaína", "laryssa", "danyelly", "ronice",
+    "sienge", "supmed", "hgp", "lacen", "microcontroladora", "marddie"
+}
+
+def parece_nome_ou_sigla(palavra: str) -> bool:
+    return (
+        palavra.isupper() or
+        palavra[0].isupper() or
+        any(char.isdigit() for char in palavra) or
+        len(palavra) > 20 or
+        "." in palavra or "@" in palavra
+    )
+
 def count_spelling_errors(text: str):
-    """
-    Detecta e conta possíveis erros de português, excluindo palavras comuns.
-    """
     if not isinstance(text, str):
-        return 0, []
+        return 0, [], 0.0
 
     doc = nlp(text)
+    total_tokens = len([token for token in doc if not token.is_punct and not token.is_space])
     erros = 0
     palavras_erradas = []
 
     for token in doc:
-        # Ignora palavras comuns e verifica se a palavra é OOV
-        if token.is_oov and token.text.lower() not in stop_words:
-            erros += 1
-            palavras_erradas.append(token.text)  # Adiciona a palavra errada
+        palavra = token.text.lower()
 
-    return erros, palavras_erradas
+        if (
+            token.is_oov and
+            palavra not in stop_words and
+            palavra not in palavras_validas_customizadas and
+            not parece_nome_ou_sigla(token.text) and
+            token.pos_ != "PROPN" and
+            token.ent_type_ != "PER"
+        ):
+            erros += 1
+            palavras_erradas.append(token.text)
+
+    porcentagem_erro = (erros / total_tokens) * 100 if total_tokens > 0 else 0.0
+
+    return erros, palavras_erradas, porcentagem_erro
