@@ -81,7 +81,7 @@ async def upload_csv(file: UploadFile = File(...)):
     
     asyncio.create_task(send_tokenization_to_api(file_path="./data/processed/dataset_processado.csv" ,id_gerado=id_gerado))
     
-    asyncio.create_task(requests.post(f"http://localhost:8000/indexar/{id_gerado}"))
+    asyncio.create_task(requests.post(f"http://processamento:5004/indexar/{id_gerado}"))
     
     try:
         final_response = requests.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
