@@ -1,6 +1,21 @@
 
 services:
 
+  processamento:
+    image: briscese/processamento:latest
+    build:
+      context: ../processamento
+      dockerfile: Dockerfile
+    ports:
+      - "5004:5004"
+    networks:
+      rede_microsservicos:
+        ipv4_address: 172.18.0.12
+    depends_on:
+      - controller-cadastro-autenticacao
+    volumes:
+      - ../processamento/src:/app/src
+
   postgres:
     container_name: postgres-container
     image: postgres
