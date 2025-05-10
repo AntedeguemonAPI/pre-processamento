@@ -48,7 +48,7 @@ services:
   banco-de-dados:
     image: briscese/banco-de-dados:latest
     build:
-      context: .
+      context: ../banco-de-dados
       dockerfile: Dockerfile
     ports:
       - "5003:5003"
@@ -58,7 +58,7 @@ services:
     depends_on:
       - controller-cadastro-autenticacao
     env_file:
-      - .env
+      - ../banco-de-dados/.env
 
   controller-cadastro-autenticacao:
     image: briscese/nc-controller-cadastro-autenticacao:latest

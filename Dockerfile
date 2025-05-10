@@ -5,7 +5,7 @@ FROM python:3.12.7-slim
 WORKDIR /app/src
 
 # Copia todos os arquivos do projeto
-COPY . .
+COPY . .  
 
 # Instala dependências
 RUN pip install --upgrade pip && pip install -r requirements.txt

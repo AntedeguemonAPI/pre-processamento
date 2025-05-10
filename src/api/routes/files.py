@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import os
 import pandas as pd
-import requests
+import httpx  # Use httpx instead of requests
 import json
 import time
 import httpx
@@ -29,7 +29,8 @@ async def process_pipeline(file_path: str, id_gerado: int):
         with open("resultado_pipeline.json", "r", encoding="utf-8") as json_file:
             resultado_json = json.load(json_file)
         
-        requests.put(f"{ID_SERVICE_URL}/preprocessamento/{id_gerado}", json=resultado_json)
+        async with httpx.AsyncClient() as client:  # Use async with httpx
+            await client.put(f"{ID_SERVICE_URL}/preprocessamento/{id_gerado}", json=resultado_json)
     except Exception as e:
         print(f"Erro ao processar o arquivo: {str(e)}")
 
@@ -45,13 +46,12 @@ async def background_pipeline(file_path: str, id_gerado: int):
         print(f"Erro na pipeline em background: {e}")
 
 async def send_tokenization_to_api(id_gerado, file_path):
-
     df = load_csv(file_path)
     df = df.replace({pd.NA: None, pd.NaT: None, float('nan'): None, float('inf'): None, float('-inf'): None})
 
     print(f"Carregando arquivo: {file_path}")
     print(f"ID gerado: {id_gerado}")
-    for index, row in df.iterrows():        
+    for index, row in df.iterrows():
         resultado_json = {
             "ID_geral": id_gerado,
             "Título": row.get("Título") or row.get("Nome do projeto"),
@@ -70,17 +70,11 @@ async def send_tokenization_to_api(id_gerado, file_path):
             "ID_chamado": row.get("ID")
         }
 
-        
-        print("Enviando dados para o serviço de tokenização...")
-        print("Json enviado:", resultado_json)
-        tempo_inicial = time.time()
-        response = requests.post(
-            f"{ID_SERVICE_URL}/texto_limpo",
-            json=resultado_json
-        )
-        print("Resposta do serviço de tokenização:", response.status_code)
-        print("Tempo de resposta:", time.time() - tempo_inicial)
-
+        async with httpx.AsyncClient() as client:  
+            response = await client.post(
+                f"{ID_SERVICE_URL}/texto_limpo",
+                json=resultado_json
+            )
 
         print(f"Enviado ID {id_gerado}: {response.status_code}")
 
@@ -90,15 +84,16 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Apenas arquivos .csv são permitidos.")
 
     try:
-        post_response = requests.post(f"{ID_SERVICE_URL}/ids")
-        post_response.raise_for_status()
-        
-        get_response = requests.get(f"{ID_SERVICE_URL}/ids")
-        get_response.raise_for_status()
-        
-        id_gerado = get_response.json()[-1].get('id')
-        if not id_gerado:
-            raise HTTPException(status_code=500, detail="Erro ao gerar ID no serviço de IDs.")
+        async with httpx.AsyncClient() as client:  # Use httpx for async HTTP calls
+            post_response = await client.post(f"{ID_SERVICE_URL}/ids/")
+            post_response.raise_for_status()
+
+            get_response = await client.get(f"{ID_SERVICE_URL}/ids/")
+            get_response.raise_for_status()
+            
+            id_gerado = get_response.json()[-1].get('id')
+            if not id_gerado:
+                raise HTTPException(status_code=500, detail="Erro ao gerar ID no serviço de IDs.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao se conectar com o serviço de IDs: {str(e)}")
     
@@ -106,11 +101,10 @@ async def upload_csv(file: UploadFile = File(...)):
     with open(file_path, "wb") as buffer:
         buffer.write(await file.read())
 
-    # Chama pipeline completa em background
     asyncio.create_task(background_pipeline(file_path, id_gerado))
 
     try:
-        final_response = requests.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
+        final_response = client.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
         final_response.raise_for_status()
         return final_response.json()
     except Exception as e:
