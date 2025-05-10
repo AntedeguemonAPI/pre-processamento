@@ -63,10 +63,10 @@ async def upload_csv(file: UploadFile = File(...)):
 
     try:
         async with httpx.AsyncClient() as client:  # Use httpx for async HTTP calls
-            post_response = await client.post(f"{ID_SERVICE_URL}/ids")
+            post_response = await client.post(f"{ID_SERVICE_URL}/ids/")
             post_response.raise_for_status()
 
-            get_response = await client.get(f"{ID_SERVICE_URL}/ids")
+            get_response = await client.get(f"{ID_SERVICE_URL}/ids/")
             get_response.raise_for_status()
             
             id_gerado = get_response.json()[-1].get('id')

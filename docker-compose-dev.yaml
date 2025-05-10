@@ -1,21 +1,6 @@
 
 services:
 
-  processamento:
-    image: briscese/processamento:latest
-    build:
-      context: ../processamento
-      dockerfile: Dockerfile
-    ports:
-      - "5004:5004"
-    networks:
-      rede_microsservicos:
-        ipv4_address: 172.18.0.12
-    depends_on:
-      - controller-cadastro-autenticacao
-    volumes:
-      - ../processamento/src:/app/src
-
   postgres:
     container_name: postgres-container
     image: postgres
@@ -63,7 +48,7 @@ services:
   banco-de-dados:
     image: briscese/banco-de-dados:latest
     build:
-      context: .
+      context: ../banco-de-dados
       dockerfile: Dockerfile
     ports:
       - "5003:5003"
@@ -73,7 +58,7 @@ services:
     depends_on:
       - controller-cadastro-autenticacao
     env_file:
-      - .env
+      - ../banco-de-dados/.env
 
   controller-cadastro-autenticacao:
     image: briscese/nc-controller-cadastro-autenticacao:latest
