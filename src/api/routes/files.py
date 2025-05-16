@@ -16,8 +16,8 @@ PROCESSED_DIR = "./data/processed/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
-ID_SERVICE_URL = "http://localhost:5003"
-ID_SERVICE_URL_PROCESSAMENTO = "http://localhost:5004"
+ID_SERVICE_URL = "http://banco-de-dados:5003"
+ID_SERVICE_URL_PROCESSAMENTO = "http://processamento:5004"
 
 async def process_pipeline(file_path: str, id_gerado: int):
     try:
@@ -52,6 +52,7 @@ async def send_tokenization_to_api(id_gerado, file_path):
     print(f"Carregando arquivo: {file_path}")
     print(f"ID gerado: {id_gerado}")
     for index, row in df.iterrows():
+        data_inicio_json = time.time()
         resultado_json = {
             "ID_geral": id_gerado,
             "Título": row.get("Título") or row.get("Nome do projeto"),
@@ -69,12 +70,17 @@ async def send_tokenization_to_api(id_gerado, file_path):
             "Limite do tempo interno de atendimento": row.get("Tempo interno para atendimento"),
             "ID_chamado": row.get("ID")
         }
+        data_fim_json = time.time()
+        print(f"Tempo de execução para gerar JSON: {data_fim_json - data_inicio_json:.2f} segundos")
 
+        data_requisicao_json = time.time()
         async with httpx.AsyncClient() as client:  
             response = await client.post(
                 f"{ID_SERVICE_URL}/texto_limpo",
                 json=resultado_json
             )
+        data_fim_requisicao_json = time.time()
+        print(f"Tempo de execução para enviar JSON: {data_fim_requisicao_json - data_requisicao_json:.2f} segundos")
 
         print(f"Enviado ID {id_gerado}: {response.status_code}")
 
