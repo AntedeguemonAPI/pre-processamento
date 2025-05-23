@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException,FastAPI
 import os
 import pandas as pd
 import httpx  # Use httpx instead of requests
@@ -8,6 +8,10 @@ import httpx
 import asyncio
 from utils.file_utils import load_csv
 from preprocess.process_pipeline import preprocess_text_column
+
+from src.api.routes import files 
+
+
 
 router = APIRouter()
 
@@ -22,7 +26,7 @@ ID_SERVICE_URL_PROCESSAMENTO = "http://processamento:5004"
 async def process_pipeline(file_path: str, id_gerado: int):
     try:
         df = load_csv(file_path)
-        df = preprocess_text_column(df, 'Descrição')
+        df = preprocess_text_column(df, 'Descrição',id_gerado)
         processed_path = os.path.join(PROCESSED_DIR, "dataset_processado.csv")
         df.to_csv(processed_path, sep=';', index=False)
 
@@ -39,9 +43,14 @@ async def background_pipeline(file_path: str, id_gerado: int):
         await process_pipeline(file_path, id_gerado)
         await send_tokenization_to_api(file_path="./data/processed/dataset_processado.csv", id_gerado=id_gerado)
         
-        async with httpx.AsyncClient() as client:
-            response = await client.post(f"http://processamento:5004/indexar/{id_gerado}")
-            print(f"Indexação finalizada com status: {response.status_code}")
+        # Tenta fazer a requisição de indexação, mas não interrompe o processo se falhar
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(f"{ID_SERVICE_URL_PROCESSAMENTO}/indexar/{id_gerado}")
+                print(f"Indexação finalizada com status: {response.status_code}")
+        except Exception as index_error:
+            print(f"Indexação falhou, mas o processo continuará. Erro: {index_error}")
+
     except Exception as e:
         print(f"Erro na pipeline em background: {e}")
 
@@ -90,31 +99,50 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Apenas arquivos .csv são permitidos.")
 
     try:
-        async with httpx.AsyncClient() as client:  # Use httpx for async HTTP calls
+        async with httpx.AsyncClient() as client:
+            # POST para gerar o ID
             post_response = await client.post(f"{ID_SERVICE_URL}/ids/")
             post_response.raise_for_status()
 
+            # GET para recuperar o último ID
             get_response = await client.get(f"{ID_SERVICE_URL}/ids/")
             get_response.raise_for_status()
-            
+
             id_gerado = get_response.json()[-1].get('id')
             if not id_gerado:
                 raise HTTPException(status_code=500, detail="Erro ao gerar ID no serviço de IDs.")
+
+            # Salva o arquivo
+            file_path = os.path.join(UPLOAD_DIR, file.filename)
+            with open(file_path, "wb") as buffer:
+                buffer.write(await file.read())
+
+            # Inicia o pipeline
+            asyncio.create_task(background_pipeline(file_path, id_gerado))
+
+            # Requisição final dentro do mesmo cliente
+            final_response = await client.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
+            final_response.raise_for_status()
+            return final_response.json()
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao se conectar com o serviço de IDs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao processar upload do CSV: {str(e)}")
     
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as buffer:
-        buffer.write(await file.read())
 
-    asyncio.create_task(background_pipeline(file_path, id_gerado))
+@router.get("/resultado_dashboard/{id}")
+def get_dashboard_result(id: int):
+    path = f"/app/mnt/data/resultado_dashboard_{id}.json"
 
-    try:
-        final_response = client.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
-        final_response.raise_for_status()
-        return final_response.json()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar dados do ID gerado: {str(e)}")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+    else:
+        return JSONResponse(
+            status_code=202,
+            content={"mensagem": "Dashboard ainda está sendo gerado."}
+        )
+
 
 
 

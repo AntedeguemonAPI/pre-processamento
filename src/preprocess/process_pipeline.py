@@ -3,8 +3,11 @@ import json
 from preprocess import clean_text, tokenize_text, remove_stopwords, vectorize_text, lemmatize_tokens, pos_tagging, parse_text, count_spelling_errors
 from collections import Counter
 from preprocess.cleaning import anonymize_sensitive_data  # Importar a função de anonimização
+import shutil
+import requests
+import os
 
-def preprocess_text_column(df: pd.DataFrame, column: str):
+def preprocess_text_column(df: pd.DataFrame, column: str , id_gerado):
     if column not in df.columns:
         print(f"Coluna {column} não encontrada no DataFrame.")
         return None
@@ -69,5 +72,44 @@ def preprocess_text_column(df: pd.DataFrame, column: str):
 
     # Exportar com a versão anonimizada visível
     df.to_csv("Chamados_Processed.csv", sep=';', index=False)
+    # === 1. Caminho de destino no repositório de processamento ===
+    # Ajuste conforme a estrutura real do seu projeto
+    caminho_origem = "Chamados_Processed.csv"
+    destino = os.path.abspath("/app/mnt/data/Chamados_Processed.csv")
+    caminho_json_origem = "resultado_pipeline.json"
+    destino_json = os.path.abspath("/app/mnt/data/resultado_pipeline.json")
+    
+    try:
+        shutil.copy(caminho_json_origem, destino_json)
+        print(f"Arquivo JSON copiado com sucesso para: {destino_json}")
+    except Exception as e:
+        print(f"Erro ao copiar o arquivo JSON: {e}")
 
-    return df
+    try:
+        shutil.copy(caminho_origem, destino)
+        print(f"Arquivo copiado com sucesso para: {destino}")
+        print("Destino absoluto:", destino)
+    except Exception as e:
+        print(f"Erro ao copiar o arquivo: {e}")
+        return df
+
+    # === 2. Requisição para o dashboard (rota do processamento na porta 5004) ===
+    try:
+        print("chamou o dashboard pelo pre processamento")
+        resposta = requests.get("http://processamento:5004/dashboard")
+        if resposta.status_code == 200:
+            print("Dashboard gerado com sucesso!")
+            print(resposta.json())  # Mostra os dados retornados (métricas, etc)
+            dashboard_data = resposta.json()
+
+            # Caminho com o ID único
+            output_dashboard_path = f"/app/mnt/data/resultado_dashboard_{id_gerado}.json"
+
+            with open(output_dashboard_path, "w", encoding="utf-8") as f:
+                json.dump(dashboard_data, f, ensure_ascii=False, indent=4)
+
+            print(f"Dashboard salvo com sucesso em {output_dashboard_path}")
+        else:
+            print(f"Erro ao acessar /dashboard: {resposta.status_code}")
+    except Exception as e:
+        print(f"Erro na requisição para o processamento: {e}")
