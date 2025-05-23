@@ -1,14 +1,13 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException,FastAPI
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 import os
 import pandas as pd
-import httpx  # Use httpx instead of requests
+import httpx
 import json
 import time
-import httpx
 import asyncio
 from utils.file_utils import load_csv
 from preprocess.process_pipeline import preprocess_text_column
-
 
 router = APIRouter()
 
@@ -17,46 +16,63 @@ PROCESSED_DIR = "./data/processed/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
-ID_SERVICE_URL = "http://banco-de-dados:5003"
-ID_SERVICE_URL_PROCESSAMENTO = "http://processamento:5004"
+ID_SERVICE_URL = "http://localhost:5003"
+ID_SERVICE_URL_PROCESSAMENTO = "http://localhost:5004"
 
 async def process_pipeline(file_path: str, id_gerado: int):
     try:
         df = load_csv(file_path)
-        df = preprocess_text_column(df, 'Descrição',id_gerado)
+        print(f"[INFO] CSV carregado com {len(df)} linhas.")
+
+        df = preprocess_text_column(df, 'Descrição', id_gerado)
+        
+        if df is None or df.empty:
+            raise ValueError(f"[ERRO] O DataFrame retornado pelo preprocessamento está vazio ou inválido para o ID {id_gerado}.")
+
+        # Verificação de erro aqui
+        if df is None:
+            raise ValueError("Erro: preprocess_text_column retornou None.")
+
+        print("[INFO] DataFrame após preprocessamento:", type(df))
         processed_path = os.path.join(PROCESSED_DIR, "dataset_processado.csv")
         df.to_csv(processed_path, sep=';', index=False)
+        print(f"[INFO] CSV processado salvo em {processed_path}")
 
         with open("resultado_pipeline.json", "r", encoding="utf-8") as json_file:
             resultado_json = json.load(json_file)
-        
-        async with httpx.AsyncClient() as client:  # Use async with httpx
+
+        async with httpx.AsyncClient() as client:
             await client.put(f"{ID_SERVICE_URL}/preprocessamento/{id_gerado}", json=resultado_json)
+
     except Exception as e:
-        print(f"Erro ao processar o arquivo: {str(e)}")
+        print(f"[ERRO] Erro ao processar o arquivo: {str(e)}")
 
 async def background_pipeline(file_path: str, id_gerado: int):
     try:
         await process_pipeline(file_path, id_gerado)
         await send_tokenization_to_api(file_path="./data/processed/dataset_processado.csv", id_gerado=id_gerado)
-        
-        # Tenta fazer a requisição de indexação, mas não interrompe o processo se falhar
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(f"{ID_SERVICE_URL_PROCESSAMENTO}/indexar/{id_gerado}")
-                print(f"Indexação finalizada com status: {response.status_code}")
+                print(f"[INFO] Indexação finalizada com status: {response.status_code}")
         except Exception as index_error:
-            print(f"Indexação falhou, mas o processo continuará. Erro: {index_error}")
+            print(f"[AVISO] Indexação falhou. Erro: {index_error}")
 
     except Exception as e:
-        print(f"Erro na pipeline em background: {e}")
+        print(f"[ERRO] Erro na pipeline em background: {e}")
 
 async def send_tokenization_to_api(id_gerado, file_path):
-    df = load_csv(file_path)
-    df = df.replace({pd.NA: None, pd.NaT: None, float('nan'): None, float('inf'): None, float('-inf'): None})
+    try:
+        df = load_csv(file_path)
+        df = df.replace({pd.NA: None, pd.NaT: None, float('nan'): None, float('inf'): None, float('-inf'): None})
+    except Exception as e:
+        print(f"[ERRO] Erro ao carregar o arquivo: {e}")
+        return
 
-    print(f"Carregando arquivo: {file_path}")
-    print(f"ID gerado: {id_gerado}")
+    print(f"[INFO] Carregando arquivo: {file_path}")
+    print(f"[INFO] ID gerado: {id_gerado}")
+
     for index, row in df.iterrows():
         data_inicio_json = time.time()
         resultado_json = {
@@ -77,18 +93,14 @@ async def send_tokenization_to_api(id_gerado, file_path):
             "ID_chamado": row.get("ID")
         }
         data_fim_json = time.time()
-        print(f"Tempo de execução para gerar JSON: {data_fim_json - data_inicio_json:.2f} segundos")
+        print(f"[INFO] Tempo para gerar JSON: {data_fim_json - data_inicio_json:.2f}s")
 
         data_requisicao_json = time.time()
-        async with httpx.AsyncClient() as client:  
-            response = await client.post(
-                f"{ID_SERVICE_URL}/texto_limpo",
-                json=resultado_json
-            )
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{ID_SERVICE_URL}/texto_limpo", json=resultado_json)
         data_fim_requisicao_json = time.time()
-        print(f"Tempo de execução para enviar JSON: {data_fim_requisicao_json - data_requisicao_json:.2f} segundos")
-
-        print(f"Enviado ID {id_gerado}: {response.status_code}")
+        print(f"[INFO] Tempo para enviar JSON: {data_fim_requisicao_json - data_requisicao_json:.2f}s")
+        print(f"[INFO] Enviado ID {id_gerado}: {response.status_code}")
 
 @router.post("/upload_csv/")
 async def upload_csv(file: UploadFile = File(...)):
@@ -97,11 +109,11 @@ async def upload_csv(file: UploadFile = File(...)):
 
     try:
         async with httpx.AsyncClient() as client:
-            # POST para gerar o ID
+            # Gera ID
             post_response = await client.post(f"{ID_SERVICE_URL}/ids/")
             post_response.raise_for_status()
 
-            # GET para recuperar o último ID
+            # Busca último ID
             get_response = await client.get(f"{ID_SERVICE_URL}/ids/")
             get_response.raise_for_status()
 
@@ -109,26 +121,31 @@ async def upload_csv(file: UploadFile = File(...)):
             if not id_gerado:
                 raise HTTPException(status_code=500, detail="Erro ao gerar ID no serviço de IDs.")
 
-            # Salva o arquivo
+            # Salva o arquivo CSV localmente
             file_path = os.path.join(UPLOAD_DIR, file.filename)
             with open(file_path, "wb") as buffer:
                 buffer.write(await file.read())
 
-            # Inicia o pipeline
-            asyncio.create_task(background_pipeline(file_path, id_gerado))
+            # Aguarda o processamento completo antes de continuar
+            await background_pipeline(file_path, id_gerado)
 
-            # Requisição final dentro do mesmo cliente
+            # Busca o resultado atualizado
             final_response = await client.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
             final_response.raise_for_status()
+
             return final_response.json()
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao processar upload do CSV: {str(e)}")
+
+
     
 
 @router.get("/resultado_dashboard/{id}")
 def get_dashboard_result(id: int):
-    path = f"/app/mnt/data/resultado_dashboard_{id}.json"
+    # Usa variável de ambiente ou padrão local
+    BASE_DASHBOARD_PATH = os.getenv("DASHBOARD_PATH", os.path.abspath("../../processamento/mnt/data"))
+    path = os.path.join(BASE_DASHBOARD_PATH, f"resultado_dashboard_{id}.json")
 
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
