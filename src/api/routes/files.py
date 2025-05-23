@@ -9,9 +9,6 @@ import asyncio
 from utils.file_utils import load_csv
 from preprocess.process_pipeline import preprocess_text_column
 
-from src.api.routes import files 
-
-
 
 router = APIRouter()
 
