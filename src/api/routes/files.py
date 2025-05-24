@@ -61,6 +61,8 @@ async def background_pipeline(file_path: str, id_gerado: int):
             print(f"[AVISO] Indexação falhou. Erro: {index_error}")
 
     except Exception as e:
+        print(Exception)
+        traceback.print_exc()
         print(f"[ERRO] Erro na pipeline em background: {e}")
 
 async def send_tokenization_to_api(id_gerado, file_path):
@@ -99,8 +101,10 @@ async def send_tokenization_to_api(id_gerado, file_path):
         print(resultado_json)
 
         data_requisicao_json = time.time()
-        async with httpx.AsyncClient() as client:
-            response = await client.post(f"{ID_SERVICE_URL}/texto_limpo", json=resultado_json)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+            response = await client.post(f"{ID_SERVICE_URL}/texto_limpo/", json=resultado_json)
+            print(f"[DEBUG] Resposta do serviço de IDs: {response.text}")
+            print(f"[DEBUG] Status code: {response.status_code}")
         data_fim_requisicao_json = time.time()
         print(f"[INFO] Tempo para enviar JSON: {data_fim_requisicao_json - data_requisicao_json:.2f}s")
         print(f"[INFO] Enviado ID {id_gerado}: {response.status_code}")
