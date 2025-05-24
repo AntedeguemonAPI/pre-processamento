@@ -8,6 +8,7 @@ import time
 import asyncio
 from utils.file_utils import load_csv
 from preprocess.process_pipeline import preprocess_text_column
+import traceback
 
 router = APIRouter()
 
@@ -94,6 +95,8 @@ async def send_tokenization_to_api(id_gerado, file_path):
         }
         data_fim_json = time.time()
         print(f"[INFO] Tempo para gerar JSON: {data_fim_json - data_inicio_json:.2f}s")
+        print("buscando ERRO ==========================")
+        print(resultado_json)
 
         data_requisicao_json = time.time()
         async with httpx.AsyncClient() as client:
@@ -108,7 +111,9 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Apenas arquivos .csv são permitidos.")
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            print(f"Chamando serviço de ID: {ID_SERVICE_URL}/ids/")
+
             # Gera ID
             post_response = await client.post(f"{ID_SERVICE_URL}/ids/")
             post_response.raise_for_status()
@@ -135,8 +140,13 @@ async def upload_csv(file: UploadFile = File(...)):
 
             return final_response.json()
 
+    except httpx.ReadTimeout:
+        raise HTTPException(status_code=504, detail="Timeout ao tentar se comunicar com o serviço de IDs.")
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao processar upload do CSV: {str(e)}")
+
 
 
     

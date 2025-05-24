@@ -7,7 +7,7 @@ import shutil
 import requests
 import os
 
-def preprocess_text_column(df: pd.DataFrame, column: str , id_gerado):
+def preprocess_text_column(df: pd.DataFrame, column: str, id_gerado ):
     if column not in df.columns:
         print(f"Coluna {column} não encontrada no DataFrame.")
         return df  # retorna DataFrame vazio em vez de None
@@ -75,63 +75,9 @@ def preprocess_text_column(df: pd.DataFrame, column: str , id_gerado):
         # Exportar o CSV localmente
         df.to_csv("Chamados_Processed.csv", sep=';', index=False)
 
-        # Caminho relativo para a pasta de destino no outro repositório
-        pasta_destino_rel = os.path.join("..", "..", "processamento", "mnt", "data")
-        pasta_destino = os.path.abspath(pasta_destino_rel)
+        
 
-        # Garante que a pasta existe
-        os.makedirs(pasta_destino, exist_ok=True)
-
-        caminho_origem = "Chamados_Processed.csv"
-        destino = os.path.join(pasta_destino, "Chamados_Processed.csv")
-
-        caminho_json_origem = "resultado_pipeline.json"
-        destino_json = os.path.join(pasta_destino, "resultado_pipeline.json")
-
-        copiou_csv = False
-        copiou_json = False
-
-        # Copiar JSON
-        try:
-            shutil.copy(caminho_json_origem, destino_json)
-            print(f"Arquivo JSON copiado com sucesso para: {destino_json}")
-            copiou_json = True
-        except Exception as e:
-            print(f"Erro ao copiar o arquivo JSON: {e}")
-
-        # Copiar CSV
-        try:
-            shutil.copy(caminho_origem, destino)
-            print(f"Arquivo CSV copiado com sucesso para: {destino}")
-            print("Destino absoluto:", destino)
-            copiou_csv = True
-        except Exception as e:
-            print(f"Erro ao copiar o arquivo CSV: {e}")
-            # NÃO retorna df aqui! Apenas loga o erro
-            copiou_csv = False
-
-        # Só chama o dashboard se ambos os arquivos foram copiados
-        if copiou_csv and copiou_json:
-            try:
-                print("Chamando o dashboard pelo pré-processamento...")
-                resposta = requests.get("http://localhost:5004/dashboard")
-                if resposta.status_code == 200:
-                    print("Dashboard gerado com sucesso!")
-                    dashboard_data = resposta.json()
-
-                    output_dashboard_path = os.path.join(pasta_destino, f"resultado_dashboard_{id_gerado}.json")
-                    with open(output_dashboard_path, "w", encoding="utf-8") as f:
-                        json.dump(dashboard_data, f, ensure_ascii=False, indent=4)
-
-                    print(f"Dashboard salvo com sucesso em {output_dashboard_path}")
-                else:
-                    print(f"Erro ao acessar /dashboard: {resposta.status_code}")
-            except Exception as e:
-                print(f"Erro na requisição para o processamento: {e}")
-        else:
-            print("Dashboard NÃO foi chamado porque uma ou ambas as cópias falharam.")
-
-            return df  # ✅ sempre retorna o DataFrame processado
+        return df  # ✅ sempre retorna o DataFrame processado
     except Exception as e:
         print(f"Erro inesperado durante o pré-processamento: {e}")
         return pd.DataFrame()  # retorna DataFrame vazio se tudo der errado
