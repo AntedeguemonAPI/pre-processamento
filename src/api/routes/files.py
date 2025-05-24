@@ -101,7 +101,7 @@ async def send_tokenization_to_api(id_gerado, file_path):
         print(resultado_json)
 
         data_requisicao_json = time.time()
-        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
             response = await client.post(f"{ID_SERVICE_URL}/texto_limpo/", json=resultado_json)
             print(f"[DEBUG] Resposta do serviço de IDs: {response.text}")
             print(f"[DEBUG] Status code: {response.status_code}")
