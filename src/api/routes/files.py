@@ -115,7 +115,7 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Apenas arquivos .csv são permitidos.")
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
             print(f"Chamando serviço de ID: {ID_SERVICE_URL}/ids/")
 
             # Gera ID
@@ -135,10 +135,19 @@ async def upload_csv(file: UploadFile = File(...)):
             with open(file_path, "wb") as buffer:
                 buffer.write(await file.read())
 
-            # Aguarda o processamento completo antes de continuar
+            # Processa em segundo plano
             await background_pipeline(file_path, id_gerado)
 
-            # Busca o resultado atualizado
+            # Chama a rota /dashboard depois do processamento
+            try:
+                print("Chamando serviço de dashboard: http://localhost:5004/dashboard")
+                dashboard_response = await client.get("http://localhost:5004/dashboard")
+                dashboard_response.raise_for_status()
+                print("Dashboard atualizado com sucesso.")
+            except Exception as dash_error:
+                print(f"[WARN] Erro ao chamar dashboard: {dash_error}")
+
+            # Retorna o resultado do ID gerado
             final_response = await client.get(f"{ID_SERVICE_URL}/ids/{id_gerado}")
             final_response.raise_for_status()
 
