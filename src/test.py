@@ -1,6 +1,6 @@
 from utils.file_utils import load_csv
 from preprocess.process_pipeline import preprocess_text_column
-
+testando para ver se salva
 file_path = "data/raw/dataset.csv"
 
 # Carrega o arquivo CSV
