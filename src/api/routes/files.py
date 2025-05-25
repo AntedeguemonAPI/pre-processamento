@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import os
 import pandas as pd
 import httpx
@@ -9,6 +9,7 @@ import asyncio
 from utils.file_utils import load_csv
 from preprocess.process_pipeline import preprocess_text_column
 import traceback
+from pathlib import Path
 
 router = APIRouter()
 
@@ -17,8 +18,8 @@ PROCESSED_DIR = "./data/processed/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
-ID_SERVICE_URL = "http://localhost:5003"
-ID_SERVICE_URL_PROCESSAMENTO = "http://localhost:5004"
+ID_SERVICE_URL = "http://banco-de-dados:5003"
+ID_SERVICE_URL_PROCESSAMENTO = "http://processamento:5004"
 
 async def process_pipeline(file_path: str, id_gerado: int):
     try:
@@ -140,8 +141,8 @@ async def upload_csv(file: UploadFile = File(...)):
 
             # Chama a rota /dashboard depois do processamento
             try:
-                print("Chamando serviço de dashboard: http://localhost:5004/dashboard")
-                dashboard_response = await client.get("http://localhost:5004/dashboard")
+                print("Chamando serviço de dashboard: http://processamento:5004/dashboard")
+                dashboard_response = await client.get("http://processamento:5004/dashboard")
                 dashboard_response.raise_for_status()
                 print("Dashboard atualizado com sucesso.")
             except Exception as dash_error:
@@ -159,11 +160,36 @@ async def upload_csv(file: UploadFile = File(...)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao processar upload do CSV: {str(e)}")
+    
+@router.get("/resultado_pipeline")
+def get_resultado_pipeline():
+    try:
+        caminho = Path("/app/src/resultado_pipeline.json")  # Caminho absoluto
+
+        if not caminho.exists():
+            return JSONResponse(content={"erro": "Arquivo não encontrado"}, status_code=404)
+
+        with open(caminho, "r", encoding="utf-8") as f:
+            dados = json.load(f)
+
+        return dados
+
+    except Exception as e:
+        # Retorna o erro como string para entender o que está falhando
+        return JSONResponse(content={"erro": f"{type(e).__name__}: {str(e)}"}, status_code=500)
+    
+@router.get("/resultado_chamados_processed")
+def get_resultado_chamados_processed():
+    caminho = Path("/app/src/Chamados_Processed.csv")
+
+    if not caminho.exists():
+        return JSONResponse(content={"erro": "Arquivo não encontrado"}, status_code=404)
+
+    return FileResponse(path=str(caminho), media_type="text/csv", filename="Chamados_Processed.csv")
 
 
 
     
-
 @router.get("/resultado_dashboard/{id}")
 def get_dashboard_result(id: int):
     # Usa variável de ambiente ou padrão local
