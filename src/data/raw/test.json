@@ -1,0 +1,17 @@
+{
+    "ID_geral": 83,
+    "Título": "Admissão de colaboradora - Acessos",
+    "Tipo": "Requisição",
+    "Descrição": "Solicitante: Ingridy Mercado\r\nVenho solicitar para a nova colaboradora Shaylandra Pamella Cristine Stumpf, que iniciará as atividades 16/10:Criação de e-mail: tst2.rr@portoconstrucao.com.br",
+    "Solução - Solução": null,
+    "Descrição_tokens_filtered": "['solicitante', 'ingridy', 'mercado', 'venho', 'solicitar', 'colaboradora', 'nome', 'iniciará', 'atividades', 'criação', 'email', 'tstrrportoconstrucaocombr']",
+    "Descrição_tokens": "['solicitante', 'ingridy', 'mercado', 'venho', 'solicitar', 'para', 'a', 'nova', 'colaboradora', 'nome', 'que', 'iniciará', 'as', 'atividades', 'criação', 'de', 'email', 'tstrrportoconstrucaocombr']",
+    "Localização": "Construtora Porto SA",
+    "Elementos associados": "Desktop -",
+    "Data de abertura": "11/10/2023 16:13",
+    "Data de fechamento": null,
+    "Tempo interno para atendimento excedido": "Não",
+    "Tempo para atendimento": null,
+    "Limite do tempo interno de atendimento": null,
+    "ID_chamado": 10244
+}
