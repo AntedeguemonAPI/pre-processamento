@@ -12,8 +12,9 @@ services:
     depends_on:
       - controller-cadastro-autenticacao
     volumes:
-    - ../processamento/src:/app/src # Se habilitar, certifique-se que o WORKDIR e CMD no Dockerfile ainda funcionam
-    - ../processamento/mnt/data:/app/mnt/data
+      - ../processamento/src:/app/src # Se habilitar, certifique-se que o WORKDIR e CMD no Dockerfile ainda funcionam
+      - ../processamento/mnt/data:/app/mnt/data # Se habilitar, certifique-se que o WORKDIR e CMD no Dockerfile ainda funcionam
+
 
   postgres:
     container_name: postgres-container
@@ -96,8 +97,7 @@ services:
 
 volumes:
   postgres-data:
-  # front-data: # Removido se não estiver em uso por nenhum serviço listado
-  # volume-chamados-processados: # Removido se não estiver em uso por nenhum serviço listado
+
 
 networks:
   rede_microsservicos:

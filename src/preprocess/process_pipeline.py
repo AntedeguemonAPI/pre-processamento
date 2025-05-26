@@ -7,22 +7,21 @@ import shutil
 import requests
 import os
 
-def preprocess_text_column(df: pd.DataFrame, column: str, id_gerado ):
+def preprocess_text_column(df: pd.DataFrame, column: str, id_gerado):
     if column not in df.columns:
         print(f"Coluna {column} não encontrada no DataFrame.")
-        return df  # retorna DataFrame vazio em vez de None
-    
-    try:
-        # Aplicar anonimização e salvar em nova coluna
-        df[column + '_anon'] = df[column].apply(lambda x: anonymize_sensitive_data(x) if isinstance(x, str) else x)
+        return df
 
-        # Limpeza e processamento de texto usando a coluna anonimizada
+    try:
+        # Diretório de saída: src/ dentro do serviço preprocessamento
+        
+
+        df[column + '_anon'] = df[column].apply(lambda x: anonymize_sensitive_data(x) if isinstance(x, str) else x)
         df[column + '_clean'] = df[column + '_anon'].apply(clean_text)
         df[column + '_tokens'] = df[column + '_clean'].apply(lambda x: tokenize_text(x) if isinstance(x, str) else [])
         df[column + '_tokens_filtered'] = df[column + '_tokens'].apply(remove_stopwords)
         df[column + '_tokens_lemmatized'] = df[column + '_tokens_filtered'].apply(lemmatize_tokens)
 
-        # Verificação
         print(f"Tokens lematizados para a coluna {column}: {df[column + '_tokens_lemmatized']}")
 
         df[column + '_pos_tags'] = df[column + '_tokens_lemmatized'].apply(
@@ -33,7 +32,6 @@ def preprocess_text_column(df: pd.DataFrame, column: str, id_gerado ):
         df[column + '_parsed'] = df[column + '_tokens_lemmatized'].apply(parse_text)
         df[column + '_vectorized'] = df[column + '_tokens_lemmatized'].apply(vectorize_text)
 
-        # 🔢 Estatísticas
         total_tokens = sum(len(tokens) for tokens in df[column + '_tokens_lemmatized'])
         pos_tag_counts = Counter()
 
@@ -67,17 +65,16 @@ def preprocess_text_column(df: pd.DataFrame, column: str, id_gerado ):
             "total_spelling_errors": total_errors,
             "percentual_medio_erros": round(media_erro_percentual, 2)
         }
+        
 
         with open("resultado_pipeline.json", "w", encoding="utf-8") as f:
             json.dump(resultado_json, f, ensure_ascii=False, indent=4)
 
         # Exportar com a versão anonimizada visível
-        # Exportar o CSV localmente
         df.to_csv("Chamados_Processed.csv", sep=';', index=False)
-
         
 
-        return df  # ✅ sempre retorna o DataFrame processado
+        return df
     except Exception as e:
         print(f"Erro inesperado durante o pré-processamento: {e}")
-        return pd.DataFrame()  # retorna DataFrame vazio se tudo der errado
+        return pd.DataFrame()
