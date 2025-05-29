@@ -102,7 +102,7 @@ async def send_tokenization_to_api(id_gerado, file_path):
         print(resultado_json)
 
         data_requisicao_json = time.time()
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0), http2=False, verify=False) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0), http2=False, verify=False) as client:
             response = await client.post(f"{ID_SERVICE_URL}/texto_limpo/", json=resultado_json)
             print(f"[DEBUG] Resposta do serviço de IDs: {response.text}")
             print(f"[DEBUG] Status code: {response.status_code}")
@@ -116,7 +116,7 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Apenas arquivos .csv são permitidos.")
 
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0), http2=False, verify=False) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0), http2=False, verify=False) as client:
             print(f"Chamando serviço de ID: {ID_SERVICE_URL}/ids/")
 
             # Gera ID
