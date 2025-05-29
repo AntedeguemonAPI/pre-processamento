@@ -43,7 +43,7 @@ async def process_pipeline(file_path: str, id_gerado: int):
         with open("resultado_pipeline.json", "r", encoding="utf-8") as json_file:
             resultado_json = json.load(json_file)
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(http2=False, verify=False) as client:
             await client.put(f"{ID_SERVICE_URL}/preprocessamento/{id_gerado}", json=resultado_json)
 
     except Exception as e:
@@ -55,7 +55,7 @@ async def background_pipeline(file_path: str, id_gerado: int):
         await send_tokenization_to_api(file_path="./data/processed/dataset_processado.csv", id_gerado=id_gerado)
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(http2=False, verify=False) as client:
                 response = await client.post(f"{ID_SERVICE_URL_PROCESSAMENTO}/indexar/{id_gerado}")
                 print(f"[INFO] Indexação finalizada com status: {response.status_code}")
         except Exception as index_error:
@@ -102,7 +102,7 @@ async def send_tokenization_to_api(id_gerado, file_path):
         print(resultado_json)
 
         data_requisicao_json = time.time()
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0), http2=False, verify=False) as client:
             response = await client.post(f"{ID_SERVICE_URL}/texto_limpo/", json=resultado_json)
             print(f"[DEBUG] Resposta do serviço de IDs: {response.text}")
             print(f"[DEBUG] Status code: {response.status_code}")
@@ -116,7 +116,7 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Apenas arquivos .csv são permitidos.")
 
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0), http2=False, verify=False) as client:
             print(f"Chamando serviço de ID: {ID_SERVICE_URL}/ids/")
 
             # Gera ID
